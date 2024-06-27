@@ -18,13 +18,18 @@ class Music(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.guild_queues = {}
+        self.FFMPEG_OPTIONS = {
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+            'options': '-vn'
+        }
 
     def get_guild_queue(self, guild_id):
         if guild_id not in self.guild_queues:
             self.guild_queues[guild_id] = {
                 'is_playing': False,
                 'music_queue': [],
-                'vc': None
+                'vc': None,
+                'FFMPEG_OPTIONS': self.FFMPEG_OPTIONS
             }
         return self.guild_queues[guild_id]
 
