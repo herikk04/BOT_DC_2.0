@@ -5,6 +5,16 @@ from datetime import datetime
 from youtube_dl import YoutubeDL
 import os
 
+def get_guild_queue(guild_queues, guild_id, ffmpeg_options):
+    if guild_id not in guild_queues:
+        guild_queues[guild_id] = {
+            'is_playing': False,
+            'music_queue': [],
+            'vc': None,
+            'FFMPEG_OPTIONS': ffmpeg_options
+        }
+    return guild_queues[guild_id]
+
 class TutorialButton(discord.ui.View):
     def __init__(self):
         super().__init__()
@@ -23,16 +33,6 @@ class Music(commands.Cog):
             'options': '-vn'
         }
 
-    def get_guild_queue(self, guild_id):
-        if guild_id not in self.guild_queues:
-            self.guild_queues[guild_id] = {
-                'is_playing': False,
-                'music_queue': [],
-                'vc': None,
-                'FFMPEG_OPTIONS': self.FFMPEG_OPTIONS
-            }
-        return self.guild_queues[guild_id]
-
     def search_yt(self, item):
         YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'True'}
         with YoutubeDL(YDL_OPTIONS) as ydl:
@@ -43,7 +43,7 @@ class Music(commands.Cog):
         return {'source': info['formats'][0]['url'], 'title': info['title']}
 
     def play_next(self, guild_id):
-        guild_queue = self.get_guild_queue(guild_id)
+        guild_queue = get_guild_queue(self.guild_queues, guild_id, self.FFMPEG_OPTIONS)
         if len(guild_queue['music_queue']) > 0:
             guild_queue['is_playing'] = True
             m_url = guild_queue['music_queue'][0]['source']
@@ -53,7 +53,7 @@ class Music(commands.Cog):
             guild_queue['is_playing'] = False
 
     async def play_music(self, guild_id):
-        guild_queue = self.get_guild_queue(guild_id)
+        guild_queue = get_guild_queue(self.guild_queues, guild_id, self.FFMPEG_OPTIONS)
         if len(guild_queue['music_queue']) > 0:
             guild_queue['is_playing'] = True
             m_url = guild_queue['music_queue'][0]['source']
@@ -87,7 +87,7 @@ class Music(commands.Cog):
         await interaction.response.defer(thinking=True)
         query = busca
         guild_id = interaction.guild_id
-        guild_queue = self.get_guild_queue(guild_id)
+        guild_queue = get_guild_queue(self.guild_queues, guild_id, self.FFMPEG_OPTIONS)
         try:
             voice_channel = interaction.user.voice.channel
         except:
@@ -119,7 +119,7 @@ class Music(commands.Cog):
     @app_commands.command(name="fila", description="Mostra as atuais músicas da fila.")
     async def q(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
-        guild_queue = self.get_guild_queue(interaction.guild_id)
+        guild_queue = get_guild_queue(self.guild_queues, interaction.guild_id, self.FFMPEG_OPTIONS)
         retval = ""
         for i in range(0, len(guild_queue['music_queue'])):
             retval += f'**{i+1} - **' + guild_queue['music_queue'][i]['title'] + "\n"
@@ -141,7 +141,7 @@ class Music(commands.Cog):
     @app_commands.default_permissions(manage_channels=True)
     async def pular(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
-        guild_queue = self.get_guild_queue(interaction.guild_id)
+        guild_queue = get_guild_queue(self.guild_queues, interaction.guild_id, self.FFMPEG_OPTIONS)
         if guild_queue['vc'] != "" and guild_queue['vc']:
             guild_queue['vc'].stop()
             await self.play_music(interaction.guild_id)
@@ -163,12 +163,14 @@ class Music(commands.Cog):
             raise error
 
 class Disconnect(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client, guild_queues, ffmpeg_options):
         self.client = client
+        self.guild_queues = guild_queues
+        self.FFMPEG_OPTIONS = ffmpeg_options
 
     @app_commands.command(name="disconnect", description="Desconecta o bot do canal de voz.")
     async def disconnect_command(self, interaction: discord.Interaction):
-        guild_queue = self.get_guild_queue(interaction.guild_id)
+        guild_queue = get_guild_queue(self.guild_queues, interaction.guild_id, self.FFMPEG_OPTIONS)
         if not interaction.user.voice:
             await interaction.response.send_message("Você não está conectado a nenhum canal de voz.")
             return
@@ -195,4 +197,4 @@ class Disconnect(commands.Cog):
 
 async def setup(client):
     await client.add_cog(Music(client))
-    await client.add_cog(Disconnect(client))
+    await client.add_cog(Disconnect(client, client.get_cog("Music").guild_queues, client.get_cog("Music").FFMPEG_OPTIONS))
