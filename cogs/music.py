@@ -52,7 +52,7 @@ class Music(commands.Cog):
         if len(guild_queue['music_queue']) > 0:
             guild_queue['is_playing'] = True
             m_url = guild_queue['music_queue'][0]['source']
-            if guild_queue['vc'] == "" or not guild_queue['vc'].is_connected() or guild_queue['vc'] == None:
+            if guild_queue['vc'] is None or not guild_queue['vc'].is_connected():
                 guild_queue['vc'] = await guild_queue['music_queue'][0]['channel'].connect()
             else:
                 await guild_queue['vc'].move_to(guild_queue['music_queue'][0]['channel'])
