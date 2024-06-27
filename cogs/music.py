@@ -9,7 +9,7 @@ class TutorialButton(discord.ui.View):
     def __init__(self):
         super().__init__()
         self.value = None
-        self.timeout=600
+        self.timeout = 600
 
         botaourl = discord.ui.Button(label="Crie vergonha na cara",)
         self.add_item(botaourl)
@@ -64,7 +64,6 @@ class Music(commands.Cog):
 
     @app_commands.command(name="ajuda", description="Mostre um comando de ajuda.")
     async def help(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True)
         helptxt = "`/ajuda` - Veja esse guia!\n`/play` - Toque uma música do YouTube!\n`/fila` - Veja a fila de músicas na Playlist\n`/pular` - Pule para a próxima música da fila"
         embedhelp = discord.Embed(
             colour=1646116,
@@ -75,12 +74,11 @@ class Music(commands.Cog):
             embedhelp.set_thumbnail(url=self.client.user.avatar.url)
         except:
             pass
-        await interaction.followup.send(embed=embedhelp, view=TutorialButton())
+        await interaction.response.send_message(embed=embedhelp, view=TutorialButton())
 
     @app_commands.command(name="play", description="Toca uma música do YouTube.")
     @app_commands.describe(busca="Digite o nome da música no YouTube")
     async def play(self, interaction: discord.Interaction, busca: str):
-        await interaction.response.defer(thinking=True)
         query = busca
         guild_id = interaction.guild_id
         guild_queue = self.get_guild_queue(guild_id)
@@ -91,7 +89,7 @@ class Music(commands.Cog):
                 colour=1646116,
                 description='Para tocar uma música, primeiro se conecte a um canal de voz.'
             )
-            await interaction.followup.send(embed=embedvc)
+            await interaction.response.send_message(embed=embedvc)
             return
         else:
             song = self.search_yt(query)
@@ -100,13 +98,13 @@ class Music(commands.Cog):
                     colour=12255232,
                     description='Algo deu errado! Tente novamente!'
                 )
-                await interaction.followup.send(embed=embedvc)
+                await interaction.response.send_message(embed=embedvc)
             else:
                 embedvc = discord.Embed(
                     colour=32768,
                     description=f"Você adicionou a música **{song['title']}** à fila!"
                 )
-                await interaction.followup.send(embed=embedvc, view=TutorialButton())
+                await interaction.response.send_message(embed=embedvc, view=TutorialButton())
                 guild_queue['music_queue'].append({'source': song['source'], 'title': song['title'], 'channel': voice_channel})
 
                 if not guild_queue['is_playing']:
@@ -114,7 +112,6 @@ class Music(commands.Cog):
 
     @app_commands.command(name="fila", description="Mostra as atuais músicas da fila.")
     async def q(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True)
         guild_queue = self.get_guild_queue(interaction.guild_id)
         retval = ""
         for i in range(0, len(guild_queue['music_queue'])):
@@ -125,18 +122,17 @@ class Music(commands.Cog):
                 colour=12255232,
                 description=f"{retval}"
             )
-            await interaction.followup.send(embed=embedvc)
+            await interaction.response.send_message(embed=embedvc)
         else:
             embedvc = discord.Embed(
                 colour=1646116,
                 description='Não existe músicas na fila no momento.'
             )
-            await interaction.followup.send(embed=embedvc)
+            await interaction.response.send_message(embed=embedvc)
 
     @app_commands.command(name="pular", description="Pula a atual música que está tocando.")
     @app_commands.default_permissions(manage_channels=True)
     async def pular(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True)
         guild_queue = self.get_guild_queue(interaction.guild_id)
         if guild_queue['vc'] != "" and guild_queue['vc']:
             guild_queue['vc'].stop()
@@ -145,7 +141,7 @@ class Music(commands.Cog):
                 colour=1646116,
                 description=f"Você pulou a música."
             )
-            await interaction.followup.send(embed=embedvc)
+            await interaction.response.send_message(embed=embedvc)
 
     @pular.error
     async def skip_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -154,12 +150,9 @@ class Music(commands.Cog):
                 colour=12255232,
                 description=f"Você precisa da permissão **Gerenciar canais** para pular músicas."
             )
-            await interaction.followup.send(embed=embedvc)
+            await interaction.response.send_message(embed=embedvc)
         else:
             raise error
-
-async def setup(client):
-    await client.add_cog(Music(client))
 
 class Disconnect(commands.Cog):
     def __init__(self, client):
@@ -193,4 +186,5 @@ class Disconnect(commands.Cog):
             await vc.disconnect()
 
 async def setup(client):
+    await client.add_cog(Music(client))
     await client.add_cog(Disconnect(client))

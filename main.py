@@ -11,7 +11,10 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 
-bot = commands.Bot(command_prefix="!!", intents=discord.Intents.all(), application_id=int(os.getenv("BOT_ID")))
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!!", intents=intents, application_id=int(os.getenv("BOT_ID")))
 
 class SubButton(discord.ui.View):
     def __init__(self):
@@ -25,6 +28,11 @@ class SubButton(discord.ui.View):
 @bot.event
 async def on_ready():
     print("Estou online!")
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands")
+    except Exception as e:
+        print(f"Error syncing commands: {e}")
 
 @bot.command()
 @commands.is_owner()
