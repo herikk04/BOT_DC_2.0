@@ -79,6 +79,7 @@ class Music(commands.Cog):
     @app_commands.command(name="play", description="Toca uma música do YouTube.")
     @app_commands.describe(busca="Digite o nome da música no YouTube")
     async def play(self, interaction: discord.Interaction, busca: str):
+        await interaction.response.defer(thinking=True)
         query = busca
         guild_id = interaction.guild_id
         guild_queue = self.get_guild_queue(guild_id)
@@ -89,7 +90,7 @@ class Music(commands.Cog):
                 colour=1646116,
                 description='Para tocar uma música, primeiro se conecte a um canal de voz.'
             )
-            await interaction.response.send_message(embed=embedvc)
+            await interaction.followup.send(embed=embedvc)
             return
         else:
             song = self.search_yt(query)
@@ -98,13 +99,13 @@ class Music(commands.Cog):
                     colour=12255232,
                     description='Algo deu errado! Tente novamente!'
                 )
-                await interaction.response.send_message(embed=embedvc)
+                await interaction.followup.send(embed=embedvc)
             else:
                 embedvc = discord.Embed(
                     colour=32768,
                     description=f"Você adicionou a música **{song['title']}** à fila!"
                 )
-                await interaction.response.send_message(embed=embedvc, view=TutorialButton())
+                await interaction.followup.send(embed=embedvc, view=TutorialButton())
                 guild_queue['music_queue'].append({'source': song['source'], 'title': song['title'], 'channel': voice_channel})
 
                 if not guild_queue['is_playing']:
@@ -112,6 +113,7 @@ class Music(commands.Cog):
 
     @app_commands.command(name="fila", description="Mostra as atuais músicas da fila.")
     async def q(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
         guild_queue = self.get_guild_queue(interaction.guild_id)
         retval = ""
         for i in range(0, len(guild_queue['music_queue'])):
@@ -122,17 +124,18 @@ class Music(commands.Cog):
                 colour=12255232,
                 description=f"{retval}"
             )
-            await interaction.response.send_message(embed=embedvc)
+            await interaction.followup.send(embed=embedvc)
         else:
             embedvc = discord.Embed(
                 colour=1646116,
                 description='Não existe músicas na fila no momento.'
             )
-            await interaction.response.send_message(embed=embedvc)
+            await interaction.followup.send(embed=embedvc)
 
     @app_commands.command(name="pular", description="Pula a atual música que está tocando.")
     @app_commands.default_permissions(manage_channels=True)
     async def pular(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
         guild_queue = self.get_guild_queue(interaction.guild_id)
         if guild_queue['vc'] != "" and guild_queue['vc']:
             guild_queue['vc'].stop()
@@ -141,7 +144,7 @@ class Music(commands.Cog):
                 colour=1646116,
                 description=f"Você pulou a música."
             )
-            await interaction.response.send_message(embed=embedvc)
+            await interaction.followup.send(embed=embedvc)
 
     @pular.error
     async def skip_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -150,7 +153,7 @@ class Music(commands.Cog):
                 colour=12255232,
                 description=f"Você precisa da permissão **Gerenciar canais** para pular músicas."
             )
-            await interaction.response.send_message(embed=embedvc)
+            await interaction.followup.send(embed=embedvc)
         else:
             raise error
 
